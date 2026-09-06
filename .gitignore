@@ -1,0 +1,12 @@
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# Go
+backend/skillbridge-api
+*.exe
+
+# OS
+.DS_Store

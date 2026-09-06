@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: skillbridge-api
+    runtime: go
+    plan: free
+    rootDir: backend
+    buildCommand: go build -o skillbridge-api .
+    startCommand: ./skillbridge-api
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillbridge-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+
+databases:
+  - name: skillbridge-db
+    plan: free
+    databaseName: skillbridge
+    user: skillbridge
