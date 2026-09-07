@@ -1,4 +1,4 @@
-package models
+﻿package models
 
 import "time"
 
@@ -44,6 +44,7 @@ type AnalysisResult struct {
 	TargetRole     string        `json:"target_role"`
 	MatchScore     int           `json:"match_score"`
 	MatchedSkills  []string      `json:"matched_skills"`
+	PartialSkills  []string      `json:"partial_skills"`
 	MissingSkills  []string      `json:"missing_skills"`
 	Summary        string        `json:"summary"`
 	Roadmap        []RoadmapItem `json:"roadmap"`

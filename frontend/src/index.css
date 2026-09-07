@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg-deep: #05060f;
   --bg-panel: rgba(255, 255, 255, 0.04);
   --border-glow: rgba(124, 92, 255, 0.35);
@@ -104,6 +104,7 @@ label {
   font-weight: 600;
 }
 .pill-matched { background: rgba(52,211,153,0.15); color: var(--success); border: 1px solid rgba(52,211,153,0.3); }
+.pill-partial { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
 .pill-missing { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
 
 .gradient-text {

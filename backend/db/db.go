@@ -1,4 +1,4 @@
-package db
+﻿package db
 
 import (
 	"context"
@@ -56,11 +56,14 @@ func createTables() error {
 		job_description TEXT NOT NULL,
 		match_score INTEGER,
 		matched_skills JSONB,
+		partial_skills JSONB,
 		missing_skills JSONB,
 		roadmap JSONB,
 		raw_ai_response JSONB,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 	);
+
+	ALTER TABLE analyses ADD COLUMN IF NOT EXISTS partial_skills JSONB;
 
 	CREATE INDEX IF NOT EXISTS idx_analyses_user_id
 	ON analyses(user_id);

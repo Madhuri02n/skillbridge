@@ -1,17 +1,17 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { extractTextFromPdf } from "../lib/pdf";
 
-const SAMPLE_RESUME = `Madhuri N — B.Tech Computer Science, JNTUH Hyderabad (CGPA 8.85)
+const SAMPLE_RESUME = `Madhuri N â€” B.Tech Computer Science, JNTUH Hyderabad (CGPA 8.85)
 Skills: Java, Spring Boot, Python, React.js, Node.js, Express.js, MongoDB, MySQL, Git
 Projects:
-- Inventory Management System — Java, Spring Boot, JPA, MySQL, React.js. Built REST API with 10 endpoints, JWT auth, dashboard analytics.
-- PrediCare — Python, Flask, Random Forest, Gemini API. ML disease prediction app, 83% accuracy.
-- WordNook — MERN stack social blogging platform with JWT auth, likes, comments.
+- Inventory Management System â€” Java, Spring Boot, JPA, MySQL, React.js. Built REST API with 10 endpoints, JWT auth, dashboard analytics.
+- PrediCare â€” Python, Flask, Random Forest, Gemini API. ML disease prediction app, 83% accuracy.
+- WordNook â€” MERN stack social blogging platform with JWT auth, likes, comments.
 Achievements: LeetCode Knight (300+ problems), Goldman Sachs India Catalyst Program mentee.`;
 
-const SAMPLE_JD = `Software Developer Intern — Backend Focus
+const SAMPLE_JD = `Software Developer Intern â€” Backend Focus
 We're looking for a backend-leaning full-stack developer intern comfortable with:
 - Go or Java for REST API development
 - PostgreSQL or MySQL, schema design
@@ -21,8 +21,26 @@ We're looking for a backend-leaning full-stack developer intern comfortable with
 - gRPC or microservices experience is a plus`;
 
 function ScoreRing({ score = 0 }) {
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useEffect(() => {
+    setDisplayScore(0);
+    const duration = 900;
+    const start = performance.now();
+
+    let frameId;
+    function tick(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setDisplayScore(Math.round(eased * score));
+      if (progress < 1) frameId = requestAnimationFrame(tick);
+    }
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [score]);
+
   const color = score >= 70 ? "var(--success)" : score >= 40 ? "#fbbf24" : "var(--danger)";
-  const bg = `conic-gradient(${color} ${score * 3.6}deg, rgba(255,255,255,0.08) 0deg)`;
+  const bg = `conic-gradient(${color} ${displayScore * 3.6}deg, rgba(255,255,255,0.08) 0deg)`;
   return (
     <div className="score-ring" style={{ background: bg }}>
       <div
@@ -37,7 +55,7 @@ function ScoreRing({ score = 0 }) {
           flexDirection: "column",
         }}
       >
-        <span>{score}%</span>
+        <span>{displayScore}%</span>
         <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 500 }}>match</span>
       </div>
     </div>
@@ -63,7 +81,7 @@ export default function Dashboard() {
     try {
       const text = await extractTextFromPdf(file);
       if (!text || text.length < 20) {
-        setError("Couldn't read text from that PDF — it may be a scanned image. Try pasting the text instead.");
+        setError("Couldn't read text from that PDF â€” it may be a scanned image. Try pasting the text instead.");
       } else {
         setResumeText(text);
       }
@@ -174,15 +192,25 @@ export default function Dashboard() {
           <div className="glass-card" style={{ padding: 28 }}>
             <h3 style={{ marginTop: 0 }}>Skills breakdown</h3>
             <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>MATCHED</div>
+              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âœ“ MATCHED</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {result.matched_skills?.map((s) => (
                   <span key={s} className="pill pill-matched">{s}</span>
                 ))}
               </div>
             </div>
+            {result.partial_skills?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âš  PARTIAL</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {result.partial_skills?.map((s) => (
+                    <span key={s} className="pill pill-partial">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
-              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>MISSING</div>
+              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âœ— MISSING</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {result.missing_skills?.map((s) => (
                   <span key={s} className="pill pill-missing">{s}</span>
@@ -196,7 +224,7 @@ export default function Dashboard() {
             <div style={{ display: "grid", gap: 16 }}>
               {result.roadmap?.map((week) => (
                 <div key={week.week} style={{ borderLeft: "3px solid var(--accent-2)", paddingLeft: 16 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Week {week.week} — {week.focus}</div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Week {week.week} â€” {week.focus}</div>
                   <div style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: 6 }}>
                     Skills: {week.skills?.join(", ")}
                   </div>
