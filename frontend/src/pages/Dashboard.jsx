@@ -186,6 +186,26 @@ export default function Dashboard() {
             <div style={{ flex: 1, minWidth: 240 }}>
               <h3 style={{ marginTop: 0 }}>Summary</h3>
               <p style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>{result.summary}</p>
+              {(() => {
+                const matched = result.matched_skills?.length || 0;
+                const partial = result.partial_skills?.length || 0;
+                const missing = result.missing_skills?.length || 0;
+                const total = matched + partial + missing || 1;
+                return (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: "flex", height: 10, borderRadius: 999, overflow: "hidden", background: "rgba(255,255,255,0.06)" }}>
+                      <div style={{ width: `${(matched / total) * 100}%`, background: "var(--success)" }} />
+                      <div style={{ width: `${(partial / total) * 100}%`, background: "#fbbf24" }} />
+                      <div style={{ width: `${(missing / total) * 100}%`, background: "var(--danger)" }} />
+                    </div>
+                    <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                      <span>{matched} matched</span>
+                      {partial > 0 && <span>{partial} partial</span>}
+                      <span>{missing} missing</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

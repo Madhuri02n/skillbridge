@@ -1,7 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+﻿const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 async function request(path, { method = "GET", body, token } = {}) {
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json; charset=utf-8" };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
