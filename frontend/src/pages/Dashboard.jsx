@@ -1,6 +1,24 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { extractTextFromPdf } from "../lib/pdf";
+
+const SAMPLE_RESUME = `Madhuri N — B.Tech Computer Science, JNTUH Hyderabad (CGPA 8.85)
+Skills: Java, Spring Boot, Python, React.js, Node.js, Express.js, MongoDB, MySQL, Git
+Projects:
+- Inventory Management System — Java, Spring Boot, JPA, MySQL, React.js. Built REST API with 10 endpoints, JWT auth, dashboard analytics.
+- PrediCare — Python, Flask, Random Forest, Gemini API. ML disease prediction app, 83% accuracy.
+- WordNook — MERN stack social blogging platform with JWT auth, likes, comments.
+Achievements: LeetCode Knight (300+ problems), Goldman Sachs India Catalyst Program mentee.`;
+
+const SAMPLE_JD = `Software Developer Intern — Backend Focus
+We're looking for a backend-leaning full-stack developer intern comfortable with:
+- Go or Java for REST API development
+- PostgreSQL or MySQL, schema design
+- Docker and basic Kubernetes concepts
+- CI/CD pipelines (GitHub Actions)
+- Experience deploying to cloud platforms (Render, AWS, or GCP)
+- gRPC or microservices experience is a plus`;
 
 function ScoreRing({ score = 0 }) {
   const color = score >= 70 ? "var(--success)" : score >= 40 ? "#fbbf24" : "var(--danger)";
@@ -34,6 +52,35 @@ export default function Dashboard() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  async function handlePdfUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setPdfLoading(true);
+    try {
+      const text = await extractTextFromPdf(file);
+      if (!text || text.length < 20) {
+        setError("Couldn't read text from that PDF — it may be a scanned image. Try pasting the text instead.");
+      } else {
+        setResumeText(text);
+      }
+    } catch (err) {
+      setError("Failed to read PDF: " + err.message);
+    } finally {
+      setPdfLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function loadSample() {
+    setTargetRole("Backend Developer Intern");
+    setResumeText(SAMPLE_RESUME);
+    setJobDescription(SAMPLE_JD);
+    setError("");
+  }
 
   async function handleAnalyze(e) {
     e.preventDefault();
@@ -52,10 +99,17 @@ export default function Dashboard() {
 
   return (
     <div className="container" style={{ paddingTop: 48, paddingBottom: 80 }}>
-      <h1 style={{ marginBottom: 6 }}>Analyze a role</h1>
-      <p style={{ color: "var(--text-muted)", marginTop: 0 }}>
-        Paste your resume and the job description you're targeting.
-      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h1 style={{ marginBottom: 6 }}>Analyze a role</h1>
+          <p style={{ color: "var(--text-muted)", marginTop: 0 }}>
+            Upload or paste your resume, then the job description you're targeting.
+          </p>
+        </div>
+        <button type="button" className="btn btn-ghost" onClick={loadSample} style={{ padding: "8px 18px" }}>
+          Try with sample data
+        </button>
+      </div>
 
       <form onSubmit={handleAnalyze} className="glass-card" style={{ padding: 28, marginTop: 24, display: "grid", gap: 18 }}>
         <div>
@@ -64,13 +118,30 @@ export default function Dashboard() {
         </div>
         <div className="grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
           <div>
-            <label>Your resume</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <label style={{ marginBottom: 0 }}>Your resume</label>
+              <label
+                htmlFor="pdf-upload"
+                className="btn btn-ghost"
+                style={{ padding: "4px 12px", fontSize: "0.78rem", cursor: "pointer" }}
+              >
+                {pdfLoading ? <span className="spinner" /> : "Upload PDF"}
+              </label>
+              <input
+                id="pdf-upload"
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handlePdfUpload}
+                style={{ display: "none" }}
+              />
+            </div>
             <textarea
               required
               rows={12}
               value={resumeText}
               onChange={(e) => setResumeText(e.target.value)}
-              placeholder="Paste your resume text here..."
+              placeholder="Paste your resume text here, or upload a PDF above..."
             />
           </div>
           <div>

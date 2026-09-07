@@ -58,7 +58,7 @@ Produce exactly 2 roadmap weeks. Be specific and realistic, not generic.`
 	userPrompt := fmt.Sprintf("Target role: %s\n\nRESUME:\n%s\n\nJOB DESCRIPTION:\n%s", targetRole, resumeText, jobDescription)
 
 	reqBody := groqChatRequest{
-		Model: "llama-3.3-70b-versatile",
+		Model: " openai/gpt-oss-120b",
 		Messages: []groqChatMessage{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
