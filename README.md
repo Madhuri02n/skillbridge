@@ -248,13 +248,4 @@ See the `docs/` folder for:
 - `marketing-plan.md` — positioning, landing copy, social posts, outreach messages
 - `automation-workflow.md` + `automation/pipeline.py` — a working, tested
   Lead → Qualify → Personalized Outreach → Follow-up → Track script
-'@ | Set-Content -Path 'README.md' -Encoding UTF8
 
-Write-Host ""
-Write-Host "Committing and pushing..." -ForegroundColor Cyan
-
-git add .
-git commit -m "Final README update: full feature list, correct model, deployment steps"
-git push
-
-Write-Host "Done." -ForegroundColor Green
