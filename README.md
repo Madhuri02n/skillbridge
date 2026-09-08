@@ -3,6 +3,10 @@
 
 **Know exactly why you're not getting the interview.**
 
+🔗 **Live app:** https://skillbridge-bzzb.onrender.com
+🔗 **GitHub repo:** https://github.com/Madhuri02n/skillbridge
+ 
+
 SkillBridge AI compares a candidate's resume against any job description and returns an
 honest fit score, a matched/partial/missing skills breakdown, a personalized 2-week
 learning roadmap, and AI-generated interview preparation — powered by an LLM, backed by
