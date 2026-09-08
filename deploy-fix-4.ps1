@@ -1,10 +1,15 @@
-﻿# SkillBridge AI
+# SkillBridge AI - README update with interview-prep API docs
+# Run this from PowerShell inside: C:\Users\nmadh\Downloads\skillbridge-ai\skillbridge
+
+Write-Host "Writing README.md..." -ForegroundColor Cyan
+@'
+# SkillBridge AI
 
 **Know exactly why you're not getting the interview.**
 
 SkillBridge AI compares a candidate's resume against any job description and returns an
 honest fit score, a matched/missing skills breakdown, and a personalized 2-week learning
-roadmap â€” powered by an LLM, backed by Go + PostgreSQL, served through a React UI.
+roadmap — powered by an LLM, backed by Go + PostgreSQL, served through a React UI.
 
 Built as a submission for the RizeOS Founding Engineer take-home assignment.
 
@@ -19,11 +24,11 @@ give this kind of personalized feedback at scale.
 
 **Target users:** individual job seekers, bootcamp/college placement cells, career coaches.
 
-**Why they'd pay:** a placement cell paying â‚¹X/student/month replaces hours of manual
+**Why they'd pay:** a placement cell paying ₹X/student/month replaces hours of manual
 resume review; individual users pay for clarity and a concrete action plan instead of
 guessing.
 
-**Differentiation:** most resume tools optimize keyword-stuffing. SkillBridge is honest â€”
+**Differentiation:** most resume tools optimize keyword-stuffing. SkillBridge is honest —
 it tells you what you're missing and gives you a plan to close the gap, not just a score
 to feel good about.
 
@@ -36,25 +41,25 @@ screening, integration with LinkedIn Learning / Coursera APIs for real course li
 ## 2. Architecture
 
 ```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”      HTTPS       â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”      SQL       â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚   React     â”‚ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¶ â”‚   Go API     â”‚ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¶ â”‚  PostgreSQL   â”‚
-â”‚  (Vercel)   â”‚ â—€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ â”‚  (Render)    â”‚ â—€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ â”‚  (Render)     â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜      JSON        â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜                â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                                         â”‚ HTTPS
-                                         â–¼
-                                 â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                                 â”‚  Groq LLM API â”‚
-                                 â”‚ (llama-3.3-70b)â”‚
-                                 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────────┐      HTTPS       ┌──────────────┐      SQL       ┌──────────────┐
+│   React     │ ───────────────▶ │   Go API     │ ─────────────▶ │  PostgreSQL   │
+│  (Vercel)   │ ◀─────────────── │  (Render)    │ ◀───────────── │  (Render)     │
+└─────────────┘      JSON        └──────┬───────┘                └──────────────┘
+                                         │ HTTPS
+                                         ▼
+                                 ┌───────────────┐
+                                 │  Groq LLM API │
+                                 │ (llama-3.3-70b)│
+                                 └───────────────┘
 ```
 
 - **Frontend:** React 19 + Vite, React Router, plain CSS (glassmorphism / gradient theme,
   no framework lock-in). Stores JWT in `sessionStorage`.
 - **Backend:** Go, [chi](https://github.com/go-chi/chi) router, JWT auth (bcrypt-hashed
   passwords), pgx for PostgreSQL access.
-- **Database:** PostgreSQL â€” `users` and `analyses` tables (see `backend/db/schema.sql`).
+- **Database:** PostgreSQL — `users` and `analyses` tables (see `backend/db/schema.sql`).
 - **AI:** [Groq](https://groq.com) OpenAI-compatible chat completions API
-  (`llama-3.3-70b-versatile`, free tier) â€” chosen for speed and zero cost, easily swappable
+  (`llama-3.3-70b-versatile`, free tier) — chosen for speed and zero cost, easily swappable
   for any other LLM provider via `backend/handlers/analyze.go`.
 
 ## 3. Tech stack
@@ -75,15 +80,15 @@ Base URL: `https://<your-render-service>.onrender.com`
 | Method | Path                 | Auth | Description                              |
 |--------|----------------------|------|-------------------------------------------|
 | GET    | `/api/health`         | No   | Health check                              |
-| POST   | `/api/auth/register`  | No   | `{ name, email, password }` â†’ `{ token, user }` |
-| POST   | `/api/auth/login`     | No   | `{ email, password }` â†’ `{ token, user }` |
-| POST   | `/api/analyze`        | Yes  | `{ target_role, resume_text, job_description }` â†’ analysis result |
+| POST   | `/api/auth/register`  | No   | `{ name, email, password }` → `{ token, user }` |
+| POST   | `/api/auth/login`     | No   | `{ email, password }` → `{ token, user }` |
+| POST   | `/api/analyze`        | Yes  | `{ target_role, resume_text, job_description }` → analysis result |
 | GET    | `/api/history`        | Yes  | Returns the authenticated user's past analyses |
-| POST   | `/api/interview-prep` | Yes  | `{ target_role, resume_text, job_description, missing_skills }` â†’ technical, gap-based, and behavioral interview questions |
+| POST   | `/api/interview-prep` | Yes  | `{ target_role, resume_text, job_description, missing_skills }` → technical, gap-based, and behavioral interview questions |
 
 Auth uses `Authorization: Bearer <token>`.
 
-**Example â€” analyze:**
+**Example — analyze:**
 ```bash
 curl -X POST https://your-api.onrender.com/api/analyze \
   -H "Authorization: Bearer $TOKEN" \
@@ -112,7 +117,7 @@ Response:
 }
 ```
 
-**Example â€” interview prep:**
+**Example — interview prep:**
 ```bash
 curl -X POST https://your-api.onrender.com/api/interview-prep \
   -H "Authorization: Bearer $TOKEN" \
@@ -140,7 +145,7 @@ Response:
 
 See `backend/db/schema.sql`. Two tables: `users` (auth) and `analyses` (stores each
 resume/JD pair, the AI's structured response including matched/partial/missing skills,
-the roadmap, and a timestamp â€” JSONB columns throughout for flexibility).
+the roadmap, and a timestamp — JSONB columns throughout for flexibility).
 
 ## 6. Local setup
 
@@ -171,9 +176,9 @@ App runs on `http://localhost:5173`.
 
 ## 7. Deployment (free tier)
 
-### Backend + Database â†’ Render
+### Backend + Database → Render
 1. Push this repo to GitHub.
-2. On [Render](https://render.com), click **New â†’ Blueprint**, point it at your repo. It
+2. On [Render](https://render.com), click **New → Blueprint**, point it at your repo. It
    will read `render.yaml` and provision the Go web service + free Postgres database
    automatically.
 3. Add your `GROQ_API_KEY` in the service's Environment tab (marked `sync: false` in the
@@ -184,40 +189,50 @@ App runs on `http://localhost:5173`.
    ```
    (Render's Postgres dashboard gives you a connection string and a built-in shell.)
 
-### Frontend â†’ Vercel
+### Frontend → Vercel
 1. Import the repo on [Vercel](https://vercel.com), set the project root to `frontend/`.
 2. Framework preset: Vite.
 3. Add environment variable `VITE_API_URL` = your Render backend URL
    (e.g. `https://skillbridge-api.onrender.com`).
 4. Deploy.
 
-Render's free web services sleep after inactivity â€” the first request after idle may take
+Render's free web services sleep after inactivity — the first request after idle may take
 ~30-50 seconds to wake up. This is expected on the free tier.
 
 ## 8. Repo structure
 
 ```
 skillbridge/
-â”œâ”€â”€ backend/
-â”‚   â”œâ”€â”€ main.go
-â”‚   â”œâ”€â”€ db/            # connection + schema.sql
-â”‚   â”œâ”€â”€ models/        # request/response structs
-â”‚   â”œâ”€â”€ handlers/       # auth, analyze, history, health
-â”‚   â””â”€â”€ middleware/     # JWT auth
-â”œâ”€â”€ frontend/
-â”‚   â””â”€â”€ src/
-â”‚       â”œâ”€â”€ pages/       # Landing, Login, Register, Dashboard, History
-â”‚       â”œâ”€â”€ components/  # Navbar
-â”‚       â”œâ”€â”€ context/     # AuthContext
-â”‚       â””â”€â”€ api.js
-â”œâ”€â”€ render.yaml
-â””â”€â”€ docs/                # strategy doc, lead sheet, marketing assets (see below)
+├── backend/
+│   ├── main.go
+│   ├── db/            # connection + schema.sql
+│   ├── models/        # request/response structs
+│   ├── handlers/       # auth, analyze, history, health
+│   └── middleware/     # JWT auth
+├── frontend/
+│   └── src/
+│       ├── pages/       # Landing, Login, Register, Dashboard, History
+│       ├── components/  # Navbar
+│       ├── context/     # AuthContext
+│       └── api.js
+├── render.yaml
+└── docs/                # strategy doc, lead sheet, marketing assets (see below)
 ```
 
 ## 9. Business & marketing docs
 
 See the `docs/` folder for:
-- `product-strategy.md` â€” problem, target users, differentiation, roadmap
-- `leads.csv` â€” 30-50 target customers with outreach angle
-- `marketing-plan.md` â€” positioning, landing copy, social posts, outreach messages
-- `automation-workflow.md` â€” Lead â†’ Qualify â†’ Outreach â†’ Follow-up â†’ Track demo
+- `product-strategy.md` — problem, target users, differentiation, roadmap
+- `leads.csv` — 30-50 target customers with outreach angle
+- `marketing-plan.md` — positioning, landing copy, social posts, outreach messages
+- `automation-workflow.md` — Lead → Qualify → Outreach → Follow-up → Track demo
+'@ | Set-Content -Path 'README.md' -Encoding UTF8
+
+Write-Host ""
+Write-Host "Committing and pushing..." -ForegroundColor Cyan
+
+git add .
+git commit -m "Update README with interview-prep API docs"
+git push
+
+Write-Host "Done." -ForegroundColor Green
