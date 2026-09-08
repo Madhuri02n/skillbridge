@@ -1,8 +1,4 @@
-# SkillBridge AI - final updated README
-# Run this from PowerShell inside: C:\Users\nmadh\Downloads\skillbridge-ai\skillbridge
 
-Write-Host "Writing README.md..." -ForegroundColor Cyan
-@'
 # SkillBridge AI
 
 **Know exactly why you're not getting the interview.**
