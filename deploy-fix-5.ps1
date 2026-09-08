@@ -1,4 +1,30 @@
-﻿:root {
+# SkillBridge AI - proper font pairing (Space Grotesk + Inter)
+# Run this from PowerShell inside: C:\Users\nmadh\Downloads\skillbridge-ai\skillbridge
+
+Write-Host "Writing frontend\index.html..." -ForegroundColor Cyan
+@'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillBridge AI — Know your skill gap</title>
+    <meta name="description" content="Paste your resume and a job description. Get an AI-powered fit score, skill gap analysis, and a 2-week roadmap." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+'@ | Set-Content -Path 'frontend\index.html' -Encoding UTF8
+
+Write-Host "Writing frontend\src\index.css..." -ForegroundColor Cyan
+@'
+:root {
   --bg-deep: #05060f;
   --bg-panel: rgba(255, 255, 255, 0.04);
   --border-glow: rgba(124, 92, 255, 0.35);
@@ -168,3 +194,13 @@ label {
 @media (max-width: 640px) {
   .grid-2 { grid-template-columns: 1fr !important; }
 }
+'@ | Set-Content -Path 'frontend\src\index.css' -Encoding UTF8
+
+Write-Host ""
+Write-Host "Committing and pushing..." -ForegroundColor Cyan
+
+git add .
+git commit -m "Add proper font pairing: Space Grotesk headings + Inter body"
+git push
+
+Write-Host "Done." -ForegroundColor Green
