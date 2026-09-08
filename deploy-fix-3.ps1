@@ -1,17 +1,319 @@
-﻿import { useState, useRef, useEffect } from "react";
+# SkillBridge AI - Interview Preparation feature
+# Run this from PowerShell inside: C:\Users\nmadh\Downloads\skillbridge-ai\skillbridge
+
+Write-Host "Writing backend\models\models.go..." -ForegroundColor Cyan
+@'
+package models
+
+import "time"
+
+type User struct {
+	ID           int       `json:"id"`
+	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type RegisterRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type AuthResponse struct {
+	Token string `json:"token"`
+	User  User   `json:"user"`
+}
+
+type AnalyzeRequest struct {
+	TargetRole      string `json:"target_role"`
+	ResumeText      string `json:"resume_text"`
+	JobDescription  string `json:"job_description"`
+}
+
+type InterviewPrepRequest struct {
+	TargetRole     string   `json:"target_role"`
+	ResumeText     string   `json:"resume_text"`
+	JobDescription string   `json:"job_description"`
+	MissingSkills  []string `json:"missing_skills"`
+}
+
+type InterviewPrepResult struct {
+	TechnicalQuestions   []string `json:"technical_questions"`
+	GapQuestions         []GapQuestion `json:"gap_questions"`
+	BehavioralQuestions  []string `json:"behavioral_questions"`
+}
+
+type GapQuestion struct {
+	Question    string `json:"question"`
+	WhyAsked    string `json:"why_asked"`
+}
+
+type RoadmapItem struct {
+	Week      int      `json:"week"`
+	Focus     string   `json:"focus"`
+	Skills    []string `json:"skills"`
+	Resources []string `json:"resources"`
+}
+
+type AnalysisResult struct {
+	ID             int           `json:"id"`
+	TargetRole     string        `json:"target_role"`
+	MatchScore     int           `json:"match_score"`
+	MatchedSkills  []string      `json:"matched_skills"`
+	PartialSkills  []string      `json:"partial_skills"`
+	MissingSkills  []string      `json:"missing_skills"`
+	Summary        string        `json:"summary"`
+	Roadmap        []RoadmapItem `json:"roadmap"`
+	CreatedAt      time.Time     `json:"created_at,omitempty"`
+}
+'@ | Set-Content -Path 'backend\models\models.go' -Encoding UTF8
+
+Write-Host "Writing backend\handlers\interview.go..." -ForegroundColor Cyan
+@'
+package handlers
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	"skillbridge/middleware"
+	"skillbridge/models"
+)
+
+func callGroqInterviewPrep(req models.InterviewPrepRequest) (*models.InterviewPrepResult, error) {
+	apiKey := os.Getenv("GROQ_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("GROQ_API_KEY is not configured on the server")
+	}
+
+	systemPrompt := `You are an expert technical interviewer preparing a candidate for a real interview. Respond with STRICT JSON ONLY, no markdown fences, no commentary, matching exactly this schema:
+{
+  "technical_questions": [<string>, ...],
+  "gap_questions": [
+    {"question": "<string>", "why_asked": "<one sentence explaining why this question relates to a specific skill gap>"}
+  ],
+  "behavioral_questions": [<string>, ...]
+}
+Generate 4-5 technical_questions based on the skills actually required by the job description.
+Generate 2-3 gap_questions specifically probing the candidate's weakest/missing areas, each with a short "why_asked" explanation.
+Generate 3 standard behavioral_questions relevant to the role level.
+Be specific to this resume and job, not generic filler questions.`
+
+	userPrompt := fmt.Sprintf(
+		"Target role: %s\n\nRESUME:\n%s\n\nJOB DESCRIPTION:\n%s\n\nKNOWN MISSING SKILLS:\n%s",
+		req.TargetRole, req.ResumeText, req.JobDescription, strings.Join(req.MissingSkills, ", "),
+	)
+
+	reqBody := groqChatRequest{
+		Model: "openai/gpt-oss-120b",
+		Messages: []groqChatMessage{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userPrompt},
+		},
+		Temperature: 0.4,
+	}
+
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq, err := http.NewRequest("POST", groqURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json; charset=utf-8")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("AI provider error (%d): %s", resp.StatusCode, string(respBytes))
+	}
+
+	var groqResp groqChatResponse
+	if err := json.Unmarshal(respBytes, &groqResp); err != nil {
+		return nil, fmt.Errorf("could not parse AI provider response: %w", err)
+	}
+	if len(groqResp.Choices) == 0 {
+		return nil, fmt.Errorf("AI provider returned no choices")
+	}
+
+	raw := strings.TrimSpace(groqResp.Choices[0].Message.Content)
+	raw = strings.TrimPrefix(raw, "```json")
+	raw = strings.TrimPrefix(raw, "```")
+	raw = strings.TrimSuffix(raw, "```")
+	raw = strings.TrimSpace(raw)
+
+	var result models.InterviewPrepResult
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		return nil, fmt.Errorf("could not parse interview prep JSON: %w", err)
+	}
+
+	return &result, nil
+}
+
+func InterviewPrep(w http.ResponseWriter, r *http.Request) {
+	_, ok := middleware.UserIDFromContext(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	var req models.InterviewPrepRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if strings.TrimSpace(req.ResumeText) == "" || strings.TrimSpace(req.JobDescription) == "" {
+		writeError(w, http.StatusBadRequest, "resume_text and job_description are required")
+		return
+	}
+
+	result, err := callGroqInterviewPrep(req)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "Interview prep generation failed: "+err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+'@ | Set-Content -Path 'backend\handlers\interview.go' -Encoding UTF8
+
+Write-Host "Writing backend\main.go..." -ForegroundColor Cyan
+@'
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+
+	"skillbridge/db"
+	"skillbridge/handlers"
+	"skillbridge/middleware"
+)
+
+func main() {
+	if err := db.Connect(); err != nil {
+		log.Fatalf("database connection failed: %v", err)
+	}
+	log.Println("connected to database")
+
+	r := chi.NewRouter()
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+
+	r.Get("/api/health", handlers.Health)
+	r.Post("/api/auth/register", handlers.Register)
+	r.Post("/api/auth/login", handlers.Login)
+
+	r.Group(func(protected chi.Router) {
+		protected.Use(middleware.RequireAuth)
+		protected.Post("/api/analyze", handlers.Analyze)
+		protected.Get("/api/history", handlers.History)
+		protected.Post("/api/interview-prep", handlers.InterviewPrep)
+	})
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("SkillBridge API listening on :%s", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatal(err)
+	}
+}
+'@ | Set-Content -Path 'backend\main.go' -Encoding UTF8
+
+Write-Host "Writing frontend\src\api.js..." -ForegroundColor Cyan
+@'
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+async function request(path, { method = "GET", body, token } = {}) {
+  const headers = { "Content-Type": "application/json; charset=utf-8" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = null;
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `Request failed with status ${res.status}`);
+  }
+  return data;
+}
+
+export const api = {
+  register: (payload) => request("/api/auth/register", { method: "POST", body: payload }),
+  login: (payload) => request("/api/auth/login", { method: "POST", body: payload }),
+  analyze: (payload, token) => request("/api/analyze", { method: "POST", body: payload, token }),
+  history: (token) => request("/api/history", { token }),
+  interviewPrep: (payload, token) => request("/api/interview-prep", { method: "POST", body: payload, token }),
+};
+'@ | Set-Content -Path 'frontend\src\api.js' -Encoding UTF8
+
+Write-Host "Writing frontend\src\pages\Dashboard.jsx..." -ForegroundColor Cyan
+@'
+import { useState, useRef, useEffect } from "react";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { extractTextFromPdf } from "../lib/pdf";
 
-const SAMPLE_RESUME = `Madhuri N â€” B.Tech Computer Science, JNTUH Hyderabad (CGPA 8.85)
+const SAMPLE_RESUME = `Madhuri N — B.Tech Computer Science, JNTUH Hyderabad (CGPA 8.85)
 Skills: Java, Spring Boot, Python, React.js, Node.js, Express.js, MongoDB, MySQL, Git
 Projects:
-- Inventory Management System â€” Java, Spring Boot, JPA, MySQL, React.js. Built REST API with 10 endpoints, JWT auth, dashboard analytics.
-- PrediCare â€” Python, Flask, Random Forest, Gemini API. ML disease prediction app, 83% accuracy.
-- WordNook â€” MERN stack social blogging platform with JWT auth, likes, comments.
+- Inventory Management System — Java, Spring Boot, JPA, MySQL, React.js. Built REST API with 10 endpoints, JWT auth, dashboard analytics.
+- PrediCare — Python, Flask, Random Forest, Gemini API. ML disease prediction app, 83% accuracy.
+- WordNook — MERN stack social blogging platform with JWT auth, likes, comments.
 Achievements: LeetCode Knight (300+ problems), Goldman Sachs India Catalyst Program mentee.`;
 
-const SAMPLE_JD = `Software Developer Intern â€” Backend Focus
+const SAMPLE_JD = `Software Developer Intern — Backend Focus
 We're looking for a backend-leaning full-stack developer intern comfortable with:
 - Go or Java for REST API development
 - PostgreSQL or MySQL, schema design
@@ -84,7 +386,7 @@ export default function Dashboard() {
     try {
       const text = await extractTextFromPdf(file);
       if (!text || text.length < 20) {
-        setError("Couldn't read text from that PDF â€” it may be a scanned image. Try pasting the text instead.");
+        setError("Couldn't read text from that PDF — it may be a scanned image. Try pasting the text instead.");
       } else {
         setResumeText(text);
       }
@@ -238,7 +540,7 @@ export default function Dashboard() {
           <div className="glass-card" style={{ padding: 28 }}>
             <h3 style={{ marginTop: 0 }}>Skills breakdown</h3>
             <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âœ“ MATCHED</div>
+              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>✓ MATCHED</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {result.matched_skills?.map((s) => (
                   <span key={s} className="pill pill-matched">{s}</span>
@@ -247,7 +549,7 @@ export default function Dashboard() {
             </div>
             {result.partial_skills?.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âš  PARTIAL</div>
+                <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>⚠ PARTIAL</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {result.partial_skills?.map((s) => (
                     <span key={s} className="pill pill-partial">{s}</span>
@@ -256,7 +558,7 @@ export default function Dashboard() {
               </div>
             )}
             <div>
-              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âœ— MISSING</div>
+              <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>✗ MISSING</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {result.missing_skills?.map((s) => (
                   <span key={s} className="pill pill-missing">{s}</span>
@@ -270,7 +572,7 @@ export default function Dashboard() {
             <div style={{ display: "grid", gap: 16 }}>
               {result.roadmap?.map((week) => (
                 <div key={week.week} style={{ borderLeft: "3px solid var(--accent-2)", paddingLeft: 16 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Week {week.week} â€” {week.focus}</div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Week {week.week} — {week.focus}</div>
                   <div style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: 6 }}>
                     Skills: {week.skills?.join(", ")}
                   </div>
@@ -285,7 +587,7 @@ export default function Dashboard() {
           {!prep && (
             <div style={{ textAlign: "center" }}>
               <button className="btn btn-primary" type="button" onClick={handlePrepareInterview} disabled={prepLoading}>
-                {prepLoading && <span className="spinner" />} {prepLoading ? "Preparing..." : "ðŸŽ¯ Prepare for Interview"}
+                {prepLoading && <span className="spinner" />} {prepLoading ? "Preparing..." : "🎯 Prepare for Interview"}
               </button>
               {prepError && <div className="error-box" style={{ marginTop: 16 }}>{prepError}</div>}
             </div>
@@ -293,7 +595,7 @@ export default function Dashboard() {
 
           {prep && (
             <div className="glass-card fade-in" style={{ padding: 28 }}>
-              <h3 style={{ marginTop: 0 }}>ðŸŽ¯ Interview Preparation</h3>
+              <h3 style={{ marginTop: 0 }}>🎯 Interview Preparation</h3>
 
               <div style={{ marginBottom: 20 }}>
                 <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>TECHNICAL QUESTIONS</div>
@@ -333,3 +635,14 @@ export default function Dashboard() {
     </div>
   );
 }
+'@ | Set-Content -Path 'frontend\src\pages\Dashboard.jsx' -Encoding UTF8
+
+Write-Host ""
+Write-Host "All files written. Committing and pushing to GitHub..." -ForegroundColor Cyan
+
+git add .
+git commit -m "Add AI-powered Interview Preparation feature"
+git push
+
+Write-Host ""
+Write-Host "Done. Render/Vercel will auto-redeploy in 1-2 minutes." -ForegroundColor Green

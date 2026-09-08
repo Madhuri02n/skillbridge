@@ -28,4 +28,5 @@ export const api = {
   login: (payload) => request("/api/auth/login", { method: "POST", body: payload }),
   analyze: (payload, token) => request("/api/analyze", { method: "POST", body: payload, token }),
   history: (token) => request("/api/history", { token }),
+  interviewPrep: (payload, token) => request("/api/interview-prep", { method: "POST", body: payload, token }),
 };

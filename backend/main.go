@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"log"
@@ -39,6 +39,7 @@ func main() {
 		protected.Use(middleware.RequireAuth)
 		protected.Post("/api/analyze", handlers.Analyze)
 		protected.Get("/api/history", handlers.History)
+		protected.Post("/api/interview-prep", handlers.InterviewPrep)
 	})
 
 	port := os.Getenv("PORT")

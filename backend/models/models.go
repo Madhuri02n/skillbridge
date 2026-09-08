@@ -32,6 +32,24 @@ type AnalyzeRequest struct {
 	JobDescription  string `json:"job_description"`
 }
 
+type InterviewPrepRequest struct {
+	TargetRole     string   `json:"target_role"`
+	ResumeText     string   `json:"resume_text"`
+	JobDescription string   `json:"job_description"`
+	MissingSkills  []string `json:"missing_skills"`
+}
+
+type InterviewPrepResult struct {
+	TechnicalQuestions   []string `json:"technical_questions"`
+	GapQuestions         []GapQuestion `json:"gap_questions"`
+	BehavioralQuestions  []string `json:"behavioral_questions"`
+}
+
+type GapQuestion struct {
+	Question    string `json:"question"`
+	WhyAsked    string `json:"why_asked"`
+}
+
 type RoadmapItem struct {
 	Week      int      `json:"week"`
 	Focus     string   `json:"focus"`
