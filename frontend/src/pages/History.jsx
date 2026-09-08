@@ -54,7 +54,7 @@ export default function History() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span className="pill pill-matched">{item.match_score}% match</span>
                   <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                    {isOpen ? "Hide details â–²" : "View details â–¼"}
+                    {isOpen ? "Hide details ▲" : "View details ▼"}
                   </span>
                 </div>
               </div>
@@ -62,7 +62,7 @@ export default function History() {
               {isOpen && (
                 <div className="fade-in" style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âœ“ MATCHED</div>
+                    <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>✓ MATCHED</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {item.matched_skills?.length
                         ? item.matched_skills.map((s) => <span key={s} className="pill pill-matched">{s}</span>)
@@ -72,7 +72,7 @@ export default function History() {
 
                   {item.partial_skills?.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âš  PARTIAL</div>
+                      <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>⚠ PARTIAL</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {item.partial_skills.map((s) => <span key={s} className="pill pill-partial">{s}</span>)}
                       </div>
@@ -80,7 +80,7 @@ export default function History() {
                   )}
 
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>âœ— MISSING</div>
+                    <div style={{ marginBottom: 8, color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: 600 }}>✗ MISSING</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {item.missing_skills?.length
                         ? item.missing_skills.map((s) => <span key={s} className="pill pill-missing">{s}</span>)
@@ -94,7 +94,7 @@ export default function History() {
                       <div style={{ display: "grid", gap: 14 }}>
                         {item.roadmap.map((week) => (
                           <div key={week.week} style={{ borderLeft: "3px solid var(--accent-2)", paddingLeft: 14 }}>
-                            <div style={{ fontWeight: 700, marginBottom: 4 }}>Week {week.week} â€” {week.focus}</div>
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>Week {week.week} — {week.focus}</div>
                             <ul style={{ margin: 0, paddingLeft: 18, color: "var(--text-muted)", fontSize: "0.9rem" }}>
                               {week.resources?.map((r, i) => <li key={i}>{r}</li>)}
                             </ul>
